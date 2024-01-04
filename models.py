@@ -32,6 +32,11 @@ class User(db.Model):
 
     feedback = db.relationship("Feedback", backref="user", cascade="all,delete")
 
+    def full_name(self):
+        """Return full name of user."""
+
+        return f"{self.first_name} {self.last_name}"
+
     # start of convenience class methods
 
     @classmethod

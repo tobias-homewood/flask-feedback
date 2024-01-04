@@ -97,3 +97,69 @@ def show_user(username):
     form = DeleteForm()
 
     return render_template("users/show.html", user=user, form=form)
+
+
+@app.route("/users/<username>/delete", methods=["POST"])
+def remove_user(username):
+    """Remove user nad redirect to login."""
+
+    if "username" not in session or username != session['username']:
+        raise Unauthorized()
+
+    user = db.session.query(User).get_or_404(username)
+    db.session.delete(user)
+    db.session.commit()
+    session.pop("username")
+
+    return redirect("/login")
+
+
+@app.route("/users/<username>/feedback/new", methods=["GET", "POST"])
+def new_feedback(username):
+    """Show add-feedback form and process it."""
+
+    if "username" not in session or username != session['username']:
+        raise Unauthorized()
+
+    form = FeedbackForm()
+
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+
+        feedback = Feedback(
+            title=title,
+            content=content,
+            username=username,
+        )
+
+        db.session.add(feedback)
+        db.session.commit()
+
+        return redirect(f"/users/{feedback.username}")
+
+    else:
+        return render_template("feedback/new.html", form=form)
+
+
+@app.route("/feedback/<int:feedback_id>/update", methods=["GET", "POST"])
+def update_feedback(feedback_id):
+    """Show update-feedback form and process it."""
+
+    feedback = db.session.query(Feedback).get_or_404(feedback_id)
+
+    if "username" not in session or feedback.username != session['username']:
+        raise Unauthorized()
+
+    form = FeedbackForm(obj=feedback)
+
+    if form.validate_on_submit():
+        feedback.title = form.title.data
+        feedback.content = form.content.data
+
+        db.session.commit()
+
+        return redirect(f"/users/{feedback.username}")
+
+    return render_template("/feedback/edit.html", form=form, feedback=feedback)
+
